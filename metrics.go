@@ -33,7 +33,6 @@ func init() {
 	prometheus.MustRegister(TaskEnqueueMetric, TaskDequeueMetric, TaskProcessedMetric)
 }
 
-func MetricsServer(listenAddr string) {
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(listenAddr, nil)
+func MetricsHandler() http.Handler {
+	return promhttp.Handler()
 }
