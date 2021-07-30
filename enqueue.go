@@ -93,6 +93,7 @@ func EnqueueWithOptions(queue, class string, args interface{}, opts EnqueueOptio
 		return "", err
 	}
 
+	TaskEnqueueMetric.WithLabelValues(queue).Inc()
 	return data.Jid, nil
 }
 

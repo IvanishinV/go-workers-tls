@@ -29,8 +29,12 @@ func (w *worker) work(messages chan *Msg) {
 			atomic.StoreInt64(&w.startedAt, time.Now().UTC().Unix())
 			w.currentMsg = message
 
+			TaskDequeueMetric.WithLabelValues(w.manager.queueName()).Inc()
 			if w.process(message) {
 				w.manager.confirm <- message
+				TaskProcessedMetric.WithLabelValues(w.manager.queueName(), "0").Inc()
+			} else {
+				TaskProcessedMetric.WithLabelValues(w.manager.queueName(), "1").Inc()
 			}
 
 			atomic.StoreInt64(&w.startedAt, 0)

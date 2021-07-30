@@ -25,7 +25,7 @@ var started bool
 var Middleware = NewMiddleware(
 	&MiddlewareLogging{},
 	&MiddlewareRetry{},
-	&MiddlewareStats{},
+	// &MiddlewareStats{},
 )
 
 func Process(queue string, job jobFunc, concurrency int, mids ...Action) {
