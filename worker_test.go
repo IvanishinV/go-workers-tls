@@ -97,7 +97,7 @@ func WorkerSpec(c gospec.Context) {
 			Middleware = NewMiddleware(
 				&MiddlewareLogging{},
 				&MiddlewareRetry{},
-				&MiddlewareStats{},
+				// &MiddlewareStats{},
 			)
 		})
 
@@ -116,7 +116,7 @@ func WorkerSpec(c gospec.Context) {
 			Middleware = NewMiddleware(
 				&MiddlewareLogging{},
 				&MiddlewareRetry{},
-				&MiddlewareStats{},
+				// &MiddlewareStats{},
 			)
 		})
 
