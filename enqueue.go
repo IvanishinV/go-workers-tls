@@ -30,7 +30,7 @@ type EnqueueOptions struct {
 	RetryCount int     `json:"retry_count,omitempty"`
 	Retry      bool    `json:"retry,omitempty"`
 	At         float64 `json:"at,omitempty"`
-	Policy	   int		`json:"policy,omitempty"`
+	Policy     int     `json:"policy,omitempty"`
 }
 
 func generateJid() string {
@@ -44,15 +44,15 @@ func generateJid() string {
 }
 
 func Enqueue(queue, class string, args interface{}) (string, error) {
-	return EnqueueWithOptions(queue, class, args, EnqueueOptions{At: nowToSecondsWithNanoPrecision(),Policy: fifo})
+	return EnqueueWithOptions(queue, class, args, EnqueueOptions{At: nowToSecondsWithNanoPrecision(), Policy: fifo})
 }
 
 func EnqueueIn(queue, class string, in float64, args interface{}) (string, error) {
-	return EnqueueWithOptions(queue, class, args, EnqueueOptions{At: nowToSecondsWithNanoPrecision() + in,Policy: fifo})
+	return EnqueueWithOptions(queue, class, args, EnqueueOptions{At: nowToSecondsWithNanoPrecision() + in, Policy: fifo})
 }
 
 func EnqueueAt(queue, class string, at time.Time, args interface{}) (string, error) {
-	return EnqueueWithOptions(queue, class, args, EnqueueOptions{At: timeToSecondsWithNanoPrecision(at),Policy: fifo})
+	return EnqueueWithOptions(queue, class, args, EnqueueOptions{At: timeToSecondsWithNanoPrecision(at), Policy: fifo})
 }
 
 func EnqueueWithOptions(queue, class string, args interface{}, opts EnqueueOptions) (string, error) {
@@ -86,14 +86,14 @@ func EnqueueWithOptions(queue, class string, args interface{}, opts EnqueueOptio
 	queue = Config.Namespace + "queue:" + queue
 	if opts.Policy == fifo {
 		_, err = conn.Do("lpush", queue, bytes)
-	} else{
+	} else {
 		_, err = conn.Do("rpush", queue, bytes)
 	}
 	if err != nil {
 		return "", err
 	}
 
-	TaskEnqueueMetric.WithLabelValues(queue).Inc()
+	TaskEnqueueMetric.WithLabelValues(data.Queue).Inc()
 	return data.Jid, nil
 }
 
