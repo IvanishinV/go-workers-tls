@@ -1,6 +1,11 @@
 package workers
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"net"
+	"os"
 	"strconv"
 	"time"
 
@@ -42,6 +47,41 @@ func Configure(options map[string]string) {
 
 	poolSize, _ = strconv.Atoi(options["pool"])
 
+	var tlsConfig *tls.Config
+	if options["tls"] == "true" {
+		tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+
+		if options["tls_skip_verify"] == "true" {
+			tlsConfig.InsecureSkipVerify = true
+		}
+
+		if options["tls_cert"] != "" && options["tls_key"] != "" {
+			cert, err := tls.LoadX509KeyPair(options["tls_cert"], options["tls_key"])
+			if err != nil {
+				panic(fmt.Sprintf("failed to load client certificate: %v", err))
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		}
+
+		if options["tls_ca"] != "" {
+			caCert, err := os.ReadFile(options["tls_ca"])
+			if err != nil {
+				panic(fmt.Sprintf("failed to read CA file: %v", err))
+			}
+			caPool := x509.NewCertPool()
+			if ok := caPool.AppendCertsFromPEM(caCert); !ok {
+				panic("failed to append CA certs: no valid PEM data found")
+			}
+			tlsConfig.RootCAs = caPool
+		}
+
+		if options["tls_skip_verify"] != "true" {
+			if host, _, err := net.SplitHostPort(options["server"]); err == nil {
+				tlsConfig.ServerName = host
+			}
+		}
+	}
+
 	Config = &config{
 		options["process"],
 		namespace,
@@ -50,10 +90,23 @@ func Configure(options map[string]string) {
 			MaxIdle:     poolSize,
 			IdleTimeout: 240 * time.Second,
 			Dial: func() (redis.Conn, error) {
-				c, err := redis.Dial("tcp", options["server"])
+				var c redis.Conn
+				var err error
+
+				if tlsConfig != nil {
+					c, err = redis.Dial(
+						"tcp",
+						options["server"],
+						redis.DialUseTLS(true),
+						redis.DialTLSConfig(tlsConfig),
+					)
+				} else {
+					c, err = redis.Dial("tcp", options["server"])
+				}
 				if err != nil {
 					return nil, err
 				}
+
 				if options["password"] != "" {
 					if _, err := c.Do("AUTH", options["password"]); err != nil {
 						c.Close()
@@ -66,7 +119,7 @@ func Configure(options map[string]string) {
 						return nil, err
 					}
 				}
-				return c, err
+				return c, nil
 			},
 			TestOnBorrow: func(c redis.Conn, t time.Time) error {
 				_, err := c.Do("PING")
